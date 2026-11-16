@@ -1,1 +1,19 @@
-{"name":"NEXORA — Your little growth space","short_name":"NEXORA","start_url":"./","display":"standalone","background_color":"#fffaf3","theme_color":"#fffaf3","description":"A gentle space to study, grow and feel good.","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+
+{
+  "name": "NEXORA — Your little growth space",
+  "short_name": "NEXORA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#100020",
+  "theme_color": "#6d28d9",
+  "description": "A gentle space to study, grow and feel good.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
+
