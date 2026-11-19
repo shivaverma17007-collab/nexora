@@ -1765,6 +1765,667 @@ function init(){
 }
 init();
 initNexoraAuth();
-</script>
+/*
+ * NEXORA account + cloud-backup safety update
+ * Apply this entire file INSIDE index.html's existing final <script> block,
+ * immediately BEFORE the closing </script> tag.
+ * This patch intentionally does not edit GitHub or Supabase by itself.
+ */
+(function () {
+  "use strict";
+
+  const NX_UPDATE_ID = "2026-11-19-account-safety-v1";
+  const NX_UPDATE_SEEN_KEY = "nexora_update_seen_" + NX_UPDATE_ID;
+  const NX_GUEST_ARCHIVE_PREFIX = "nexora_guest_archive_";
+  const NX_ACCOUNT_CHOICE_PREFIX = "nexora_account_choice_";
+  const NX_BACKUP_PAUSE_PREFIX = "nexora_backup_pause_";
+  const NX_CLOUD_DECISION_PREFIX = "nexora_cloud_decision_";
+
+  let nxCloudBackupEnabled = false;
+  let nxCloudBackupHasExisting = false;
+  let nxCloudPreferenceReadError = false;
+  let nxPendingSession = null;
+  let nxUpdateNoticePromise = Promise.resolve();
+
+  function nxStatus(message, mode) {
+    if (typeof setCloudStatus === "function") setCloudStatus(message, mode || "info");
+    else if (typeof showToast === "function") showToast(message);
+  }
+
+  function nxPauseKey(userId) {
+    return NX_BACKUP_PAUSE_PREFIX + String(userId || "");
+  }
+
+  function nxAccountChoiceKey(userId) {
+    return NX_ACCOUNT_CHOICE_PREFIX + String(userId || "");
+  }
+
+  function nxCloudDecisionKey(userId) {
+    return NX_CLOUD_DECISION_PREFIX + String(userId || "");
+  }
+
+  function nxHasGuestData(source) {
+    const s = source || state;
+    const collections = ["tasks", "study", "journals", "routines", "trackers", "trackerLogs", "focusHistory", "feedbacks"];
+    if (collections.some((key) => Array.isArray(s[key]) && s[key].length > 0)) return true;
+    if (Array.isArray(s.activeDays) && s.activeDays.length) return true;
+    if (Number(s.streak) > 0 || Number(s.focusSessions) > 0) return true;
+    if (Number(s.hydrationMl) !== Number(defaultState.hydrationMl)) return true;
+    if (Number(s.hydrationGoal) !== Number(defaultState.hydrationGoal)) return true;
+    const p = s.profile || {};
+    if ((p.name && p.name !== "Explorer") || p.handle || (p.bio && p.bio !== defaultState.profile.bio) || p.customPfp) return true;
+    if (Array.isArray(p.exams) && p.exams.length) return true;
+    if (p.focusMode && p.focusMode !== defaultState.profile.focusMode) return true;
+    const settings = s.settings || {};
+    if (settings.compact || settings.quotes === false || settings.streakVisible === false || settings.reminders || settings.currentAffairsHome) return true;
+    if (settings.accent && settings.accent !== defaultState.settings.accent) return true;
+    if (settings.font && settings.font !== defaultState.settings.font) return true;
+    if (settings.scale && settings.scale !== defaultState.settings.scale) return true;
+    if (settings.weight && settings.weight !== defaultState.settings.weight) return true;
+    if (s.mindFabPos) return true;
+    return false;
+  }
+
+  function nxAskChoice(config) {
+    return new Promise((resolve) => {
+      document.getElementById("nxSafetyOverlay")?.remove();
+      const root = document.createElement("div");
+      root.id = "nxSafetyOverlay";
+      root.className = "nx-safety-overlay";
+      const buttons = (config.buttons || []).map((button, index) => {
+        const isPrimary = button.primary ? " nx-safety-primary" : "";
+        const isDanger = button.danger ? " nx-safety-danger" : "";
+        return `<button type="button" class="nx-safety-action${isPrimary}${isDanger}" data-choice-index="${index}">${button.label}</button>`;
+      }).join("");
+      root.innerHTML = `
+        <section class="nx-safety-card" role="dialog" aria-modal="true" aria-labelledby="nxSafetyTitle">
+          <div class="nx-safety-mark">N</div>
+          <h2 id="nxSafetyTitle">${config.title}</h2>
+          <p>${config.message}</p>
+          ${config.note ? `<div class="nx-safety-note">${config.note}</div>` : ""}
+          <div class="nx-safety-actions">${buttons}</div>
+        </section>`;
+      root.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-choice-index]");
+        if (!button) return;
+        const index = Number(button.getAttribute("data-choice-index"));
+        const selected = config.buttons[index];
+        root.remove();
+        resolve(selected ? selected.value : null);
+      });
+      document.body.appendChild(root);
+      root.querySelector("button")?.focus();
+    });
+  }
+
+  function nxAddStyles() {
+    if (document.getElementById("nxAccountSafetyStyles")) return;
+    const style = document.createElement("style");
+    style.id = "nxAccountSafetyStyles";
+    style.textContent = `
+      .nx-header-avatar-btn{display:grid!important;place-items:center;width:44px;height:44px;min-width:44px;max-width:44px;padding:2px!important;margin:0 1px 0 0!important;border:0!important;border-radius:50%!important;background:transparent!important;box-shadow:none!important;flex:0 0 44px!important}
+      .nx-header-avatar-btn .avatar-ring{width:40px;height:40px}
+      .nx-header-avatar-btn .profile-pill-text{display:none!important}
+      .topbar .brand{gap:9px;min-width:0}
+      .topbar .brand-title{white-space:nowrap}
+      .nx-safety-overlay{position:fixed;inset:0;z-index:1000000;display:grid;place-items:center;padding:18px;background:rgba(12,9,25,.76);backdrop-filter:blur(9px)}
+      .nx-safety-card{width:min(100%,440px);max-height:90vh;overflow:auto;padding:23px 20px 18px;border:1px solid var(--line,#e6e0f3);border-radius:25px;background:var(--surface,#fff);color:var(--ink,#1f1b2e);box-shadow:0 24px 90px rgba(0,0,0,.34);text-align:left}
+      .nx-safety-mark{width:44px;height:44px;display:grid;place-items:center;margin-bottom:12px;border-radius:15px;background:linear-gradient(145deg,#a78bfa,#6366f1 60%,#0ea5e9);color:white;font-weight:950;font-size:20px;box-shadow:0 8px 20px rgba(99,102,241,.25)}
+      .nx-safety-card h2{margin:0 0 9px;font-size:20px;line-height:1.25;color:var(--ink,#1f1b2e)}
+      .nx-safety-card p{margin:0;color:var(--ink-soft,var(--muted,#736d87));font-size:14px;line-height:1.6;white-space:pre-line}
+      .nx-safety-note{margin-top:12px;padding:11px 12px;border:1px solid var(--line,#e6e0f3);border-radius:13px;background:var(--surface-2,#f1eef9);font-size:12px;line-height:1.55;color:var(--muted,#736d87)}
+      .nx-safety-actions{display:grid;gap:9px;margin-top:18px}
+      .nx-safety-action{min-height:48px;padding:12px 14px;border:1px solid var(--line,#e6e0f3);border-radius:14px;background:var(--surface-2,#f1eef9);color:var(--ink,#1f1b2e);font-weight:800;text-align:center}
+      .nx-safety-primary{background:var(--primary,#8065d8);border-color:var(--primary,#8065d8);color:white}
+      .nx-safety-danger{color:#be123c;border-color:#fecdd3;background:#fff1f2}
+      body.dark .nx-safety-danger{color:#fecdd3;background:#4c1d29;border-color:#7f1d1d}
+      .nx-backup-inline-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+      @media(max-width:390px){.topbar{gap:5px}.topbar .brand{gap:6px}.nx-header-avatar-btn{width:40px;height:40px;min-width:40px;max-width:40px;flex-basis:40px}.nx-header-avatar-btn .avatar-ring{width:36px;height:36px}.topbar .brand-title{font-size:14px}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function nxShowUpdateNoticeOnce() {
+    try {
+      if (localStorage.getItem(NX_UPDATE_SEEN_KEY) === "1") return Promise.resolve();
+    } catch (_) {}
+    return nxAskChoice({
+      title: "Welcome to the latest NEXORA update ✨",
+      message: "We have improved account safety and profile access. You can now choose whether to transfer guest data, restore an older cloud copy, or keep this device's data. Cloud backup stays OFF until you explicitly enable it.",
+      note: "Also included: a profile shortcut beside the NEXORA name. This notice appears once on this device for this update.",
+      buttons: [{ label: "Got it · OK", value: "ok", primary: true }, { label: "× Close", value: "close" }]
+    }).then(() => {
+      try { localStorage.setItem(NX_UPDATE_SEEN_KEY, "1"); } catch (_) {}
+    });
+  }
+
+  function nxSnapshotArchive(label, raw) {
+    const key = NX_GUEST_ARCHIVE_PREFIX + Date.now() + "_" + String(label || "saved");
+    localStorage.setItem(key, raw || JSON.stringify(state));
+    return key;
+  }
+
+  function nxMoveGuestDataToArchive() {
+    const raw = localStorage.getItem("nexora") || JSON.stringify(state);
+    const key = NX_GUEST_ARCHIVE_PREFIX + Date.now() + "_before_fresh_start";
+    localStorage.removeItem("nexora");
+    try {
+      localStorage.setItem(key, raw);
+      const fresh = structuredClone(defaultState);
+      state = fresh;
+      ensureDisciplines();
+      localStorage.setItem("nexora", JSON.stringify(state));
+      renderAll();
+      return key;
+    } catch (error) {
+      localStorage.removeItem(key);
+      localStorage.setItem("nexora", raw);
+      state = loadState();
+      renderAll();
+      throw new Error("NEXORA could not safely archive this device's data. Nothing was intentionally erased. Use Export Backup, then try Start Fresh again.");
+    }
+  }
+
+  function nxDownloadLatestArchive() {
+    const keys = Object.keys(localStorage).filter((key) => key.startsWith(NX_GUEST_ARCHIVE_PREFIX)).sort().reverse();
+    if (!keys.length) {
+      showToast("No preserved guest-data archive was found on this device.");
+      return;
+    }
+    const raw = localStorage.getItem(keys[0]);
+    if (!raw) {
+      showToast("The preserved archive could not be read.");
+      return;
+    }
+    const blob = new Blob([raw], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "nexora-preserved-guest-data.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    showToast("Preserved guest data download started.");
+  }
+
+  async function nxWriteBackupPreference(enabled) {
+    if (!currentNexoraUser || !supabaseClient) throw new Error("Please sign in first.");
+    const pauseKey = nxPauseKey(currentNexoraUser.id);
+    if (!enabled) localStorage.setItem(pauseKey, "1");
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
+    const { error } = await supabaseClient.from("backup_preferences").upsert({
+      user_id: currentNexoraUser.id,
+      enabled: !!enabled,
+      timezone,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+    if (error) {
+      if (enabled) localStorage.setItem(pauseKey, "1");
+      throw error;
+    }
+    if (enabled) localStorage.removeItem(pauseKey);
+    else localStorage.setItem(pauseKey, "1");
+    return true;
+  }
+
+  async function nxReadBackupPreference(userId) {
+    const pauseKey = nxPauseKey(userId);
+    try {
+      const { data, error } = await supabaseClient.from("backup_preferences")
+        .select("enabled").eq("user_id", userId).maybeSingle();
+      if (error) throw error;
+      const enabled = !!data?.enabled && localStorage.getItem(pauseKey) !== "1";
+      return { enabled, error: null };
+    } catch (error) {
+      localStorage.setItem(pauseKey, "1");
+      return { enabled: false, error };
+    }
+  }
+
+  function nxNormalizeCloudData(remote) {
+    let source = remote;
+    if (typeof source === "string") source = JSON.parse(source);
+    if (!source || typeof source !== "object" || Array.isArray(source)) {
+      throw new Error("The cloud backup format is not valid. Your device data was left unchanged.");
+    }
+    const next = {
+      ...structuredClone(defaultState),
+      ...source,
+      settings: { ...structuredClone(defaultState.settings), ...(source.settings || {}) },
+      profile: { ...structuredClone(defaultState.profile), ...(source.profile || {}) }
+    };
+    ["tasks", "study", "journals", "routines", "disciplines", "disciplineEffort", "focusHistory", "trackers", "trackerLogs", "activeDays", "feedbacks"].forEach((key) => {
+      if (!Array.isArray(next[key])) next[key] = [];
+    });
+    if (!next.profile || typeof next.profile !== "object") next.profile = structuredClone(defaultState.profile);
+    if (!next.settings || typeof next.settings !== "object") next.settings = structuredClone(defaultState.settings);
+    return next;
+  }
+
+  async function nxUploadStateOnce({ insertOnly }) {
+    const payload = JSON.parse(JSON.stringify(state));
+    const query = supabaseClient.from("nexora_user_data");
+    const result = insertOnly
+      ? await query.insert({ user_id: currentNexoraUser.id, data: payload, updated_at: new Date().toISOString() })
+      : await query.upsert({ user_id: currentNexoraUser.id, data: payload, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (result.error) throw result.error;
+    nxCloudBackupHasExisting = true;
+    if (!insertOnly) localStorage.setItem(nxCloudDecisionKey(currentNexoraUser.id), "restore");
+    return true;
+  }
+
+  async function nxHandleNewAccountDataChoice(userId, preference) {
+    if (localStorage.getItem(nxAccountChoiceKey(userId))) {
+      nxCloudBackupEnabled = false;
+      return;
+    }
+    const hasData = nxHasGuestData(state);
+    if (!hasData) {
+      nxCloudBackupEnabled = false;
+      localStorage.setItem(nxAccountChoiceKey(userId), "empty");
+      return;
+    }
+
+    const choice = await nxAskChoice({
+      title: "What should happen to your guest data?",
+      message: "This phone already has NEXORA progress. Choose one option to finish linking your new account.",
+      note: "Transfer is a ONE-TIME copy to your account. It does not turn on automatic cloud backup. Start Fresh keeps a separate archive on this phone and starts the account with empty progress.",
+      buttons: [
+        { label: "Transfer my guest data once", value: "transfer", primary: true },
+        { label: "Start fresh without guest data", value: "fresh", danger: true }
+      ]
+    });
+
+    await nxWriteBackupPreference(false);
+    if (choice === "transfer") {
+      try {
+        await nxUploadStateOnce({ insertOnly: true });
+        localStorage.setItem(nxAccountChoiceKey(userId), "transferred_once");
+        localStorage.setItem(nxCloudDecisionKey(userId), "transferred");
+        nxCloudBackupEnabled = false;
+        nxStatus("Guest data transferred once. Automatic cloud backup is still OFF.", "ok");
+      } catch (error) {
+        nxCloudBackupEnabled = false;
+        localStorage.removeItem(nxAccountChoiceKey(userId));
+        throw new Error("Guest data was kept on this phone, but the one-time transfer did not complete: " + (error.message || "Please retry."));
+      }
+    } else if (choice === "fresh") {
+      const archiveKey = nxMoveGuestDataToArchive();
+      localStorage.setItem(nxAccountChoiceKey(userId), "fresh_" + archiveKey);
+      nxCloudBackupEnabled = false;
+      nxStatus("Started fresh. Your previous guest data is preserved on this phone and is not linked to the account.", "ok");
+    }
+  }
+
+  async function nxHandleExistingCloudBackup(user, cloudRow, preference) {
+    nxCloudBackupHasExisting = true;
+    const choice = await nxAskChoice({
+      title: "A previous cloud backup was found ☁️",
+      message: "Would you like to restore the saved data to this device, or keep using the data already on this device?",
+      note: "Choosing Keep does not delete the old cloud backup. Automatic backup will be paused. Later, when you explicitly enable backup, NEXORA will warn you before replacing the old cloud copy.",
+      buttons: [
+        { label: "Restore previous cloud data", value: "restore", primary: true },
+        { label: "Keep this device's data", value: "keep" }
+      ]
+    });
+
+    if (choice === "restore") {
+      const restored = nxNormalizeCloudData(cloudRow.data);
+      const oldRaw = localStorage.getItem("nexora") || JSON.stringify(state);
+      nxSnapshotArchive("before_cloud_restore", oldRaw);
+      try {
+        applyingCloudData = true;
+        state = restored;
+        localStorage.setItem("nexora", JSON.stringify(state));
+        renderAll();
+      } catch (error) {
+        state = loadState();
+        throw new Error("Cloud data could not be safely restored to this phone. Your previous device data remains preserved. " + (error.message || ""));
+      } finally {
+        applyingCloudData = false;
+      }
+      nxCloudBackupEnabled = !!preference.enabled;
+      localStorage.setItem(nxCloudDecisionKey(user.id), "restore");
+      nxStatus(nxCloudBackupEnabled
+        ? "Cloud data restored. Your previously enabled backup permission remains active."
+        : "Cloud data restored. Automatic cloud backup remains OFF until you enable it.", "ok");
+    } else {
+      nxCloudBackupEnabled = false;
+      try {
+        await nxWriteBackupPreference(false);
+        localStorage.setItem(nxCloudDecisionKey(user.id), "keep");
+        nxStatus("Your device data was kept. The old cloud backup is untouched and automatic backup is paused.", "ok");
+      } catch (error) {
+        localStorage.setItem(nxPauseKey(user.id), "1");
+        nxStatus("Your device data was kept and backup is paused on this device. The cloud preference could not be updated: " + (error.message || ""), "error");
+      }
+    }
+  }
+
+  function nxSetupHeaderProfile() {
+    const button = document.getElementById("headerProfileBtn");
+    const brand = document.querySelector(".topbar .brand");
+    if (!button || !brand) return;
+    brand.querySelector(":scope > .brandmark")?.remove();
+    if (button.parentElement !== brand) brand.insertBefore(button, brand.firstChild);
+    const needsMarkup = !button.classList.contains("nx-header-avatar-btn");
+    button.classList.remove("hide", "profile-pill");
+    button.classList.add("nx-header-avatar-btn");
+    button.title = "Open your profile · login required";
+    button.setAttribute("aria-label", "Open your NEXORA profile");
+    if (needsMarkup) {
+      button.innerHTML = `
+        <div class="avatar-ring"><div class="avatar-core" id="topAvatar">N</div></div>
+        <div class="profile-pill-text" aria-hidden="true"><b id="topProfileName">Explorer</b><span id="topProfileTag">Your profile</span></div>`;
+    }
+  }
+
+  function nxAddArchiveDownloadButton() {
+    const card = document.getElementById("accountCard");
+    if (!card) return;
+    let button = document.getElementById("nxArchiveDownloadBtn");
+    const exists = Object.keys(localStorage).some((key) => key.startsWith(NX_GUEST_ARCHIVE_PREFIX));
+    if (!exists) {
+      button?.remove();
+      return;
+    }
+    if (!button) {
+      button = document.createElement("button");
+      button.id = "nxArchiveDownloadBtn";
+      button.type = "button";
+      button.className = "secondary-btn";
+      button.style.width = "100%";
+      button.style.marginTop = "10px";
+      button.textContent = "Download preserved guest/device data";
+      button.addEventListener("click", nxDownloadLatestArchive);
+      const status = document.getElementById("cloudStatus");
+      if (status) status.insertAdjacentElement("afterend", button);
+      else card.appendChild(button);
+    }
+  }
+
+  const nxOriginalRenderHeaderAndTicker = renderHeaderAndTicker;
+  renderHeaderAndTicker = function () {
+    nxOriginalRenderHeaderAndTicker();
+    nxSetupHeaderProfile();
+  };
+
+  const nxOriginalOpenModal = openModal;
+  openModal = function (id) {
+    if ((id === "profileModal" || id === "peersModal") && !currentNexoraUser) {
+      openAuthModal();
+      showToast("Please log in to access profiles.");
+      return;
+    }
+    nxOriginalOpenModal(id);
+  };
+
+  const nxOriginalOpenProfileModal = openProfileModal;
+  openProfileModal = function (who) {
+    if (!currentNexoraUser) {
+      openAuthModal();
+      showToast("Log in is required to open a profile.");
+      return;
+    }
+    nxOriginalOpenProfileModal(who);
+  };
+
+  const nxOriginalToggleProfileEdit = toggleProfileEdit;
+  toggleProfileEdit = function () {
+    if (!currentNexoraUser) { openAuthModal(); showToast("Log in is required to edit your profile."); return; }
+    nxOriginalToggleProfileEdit();
+  };
+
+  const nxOriginalSaveProfileDetails = saveProfileDetails;
+  saveProfileDetails = function () {
+    if (!currentNexoraUser) { openAuthModal(); showToast("Log in is required to save profile changes."); return; }
+    nxOriginalSaveProfileDetails();
+  };
+
+  const nxOriginalUploadCustomPfp = uploadCustomPfp;
+  uploadCustomPfp = function (event) {
+    if (!currentNexoraUser) { openAuthModal(); showToast("Log in is required to change your profile photo."); return; }
+    nxOriginalUploadCustomPfp(event);
+  };
+
+  const nxOriginalShareProgress = shareProgress;
+  shareProgress = function () {
+    if (!currentNexoraUser) { openAuthModal(); showToast("Log in is required to share profile progress."); return; }
+    nxOriginalShareProgress();
+  };
+
+  const nxOriginalRenderAccount = renderAccount;
+  renderAccount = function () {
+    nxOriginalRenderAccount();
+    const signedIn = !!currentNexoraUser;
+    const button = document.getElementById("syncNowBtn");
+    if (button) {
+      button.textContent = nxCloudBackupEnabled ? "Back up now" : "Enable Cloud Backup";
+      button.disabled = !signedIn || !!cloudBusy;
+      button.removeAttribute("onclick");
+      button.onclick = () => nxCloudBackupEnabled ? syncCloudNow() : enableCloudBackup();
+    }
+    const stateText = document.getElementById("accountStateText");
+    if (stateText) {
+      stateText.textContent = signedIn
+        ? (currentNexoraUser.email || currentNexoraUser.phone || "Account connected")
+        : "Sign in to your account. Cloud backup is optional and stays OFF until you enable it.";
+    }
+    nxAddArchiveDownloadButton();
+  };
+
+  const nxOriginalRenderAuthModal = renderAuthModal;
+  renderAuthModal = function () {
+    nxOriginalRenderAuthModal();
+    const sub = document.getElementById("authModalSub");
+    if (sub) sub.textContent = currentNexoraUser
+      ? "Your account is connected. Cloud backup is separate and remains OFF unless you explicitly enable it."
+      : "Your progress stays on this device. Creating an account does not automatically turn on cloud backup.";
+  };
+
+  queueCloudSave = function () {
+    clearTimeout(cloudSaveTimer);
+    if (!currentNexoraUser || !supabaseClient || applyingCloudData || !nxCloudBackupEnabled) return;
+    cloudSaveTimer = setTimeout(() => syncCloudNow(), 1100);
+  };
+
+  syncCloudNow = async function () {
+    if (!currentNexoraUser || !supabaseClient || !nxCloudBackupEnabled || cloudBusy) return false;
+    cloudBusy = true;
+    renderAccount();
+    nxStatus("Backing up your data…", "busy");
+    try {
+      await nxUploadStateOnce({ insertOnly: false });
+      nxStatus("Backup completed successfully.", "ok");
+      return true;
+    } catch (error) {
+      nxStatus("Backup failed. Your previous cloud copy was not intentionally deleted: " + (error.message || ""), "error");
+      return false;
+    } finally {
+      cloudBusy = false;
+      renderAccount();
+    }
+  };
+
+  window.enableCloudBackup = async function () {
+    if (!currentNexoraUser || !supabaseClient) { openAuthModal(); return; }
+    if (cloudBusy) return;
+    const warning = nxCloudBackupHasExisting
+      ? "A cloud backup already exists for this account. Enabling backup will upload this device's current NEXORA data and replace that cloud copy only if the upload succeeds. The old copy is not deleted first.\n\nContinue?"
+      : "This will upload the current NEXORA data from this device to your account once, then enable automatic backup for future changes.\n\nContinue?";
+    if (!confirm(warning)) return;
+
+    cloudBusy = true;
+    renderAccount();
+    nxStatus("Saving your backup permission…", "busy");
+    try {
+      await nxWriteBackupPreference(true);
+      nxCloudBackupEnabled = true;
+      nxStatus("Uploading your current data…", "busy");
+      await nxUploadStateOnce({ insertOnly: false });
+      nxCloudBackupEnabled = true;
+      nxCloudBackupHasExisting = true;
+      nxStatus("Cloud backup is ON. Your data was uploaded successfully.", "ok");
+    } catch (error) {
+      nxCloudBackupEnabled = false;
+      try { await nxWriteBackupPreference(false); } catch (_) { localStorage.setItem(nxPauseKey(currentNexoraUser.id), "1"); }
+      nxStatus("Backup could not be enabled. Automatic sync remains OFF; your previous cloud data has not been intentionally deleted. " + (error.message || ""), "error");
+    } finally {
+      cloudBusy = false;
+      renderAccount();
+    }
+  };
+
+  applyCloudSession = async function (user) {
+    if (!user || !supabaseClient) return;
+    if (nxPendingSession && nxPendingSession.id === user.id) return nxPendingSession.promise;
+    if (handledAuthUserId === user.id) return;
+
+    handledAuthUserId = user.id;
+    currentNexoraUser = user;
+    nxCloudBackupEnabled = false;
+    nxCloudBackupHasExisting = false;
+    nxCloudPreferenceReadError = false;
+    clearTimeout(cloudSaveTimer);
+    renderAccount();
+
+    const work = (async () => {
+      await nxUpdateNoticePromise;
+      const preference = await nxReadBackupPreference(user.id);
+      nxCloudPreferenceReadError = !!preference.error;
+      const { data: cloudRow, error: cloudError } = await supabaseClient.from("nexora_user_data")
+        .select("data").eq("user_id", user.id).maybeSingle();
+      if (cloudError) throw cloudError;
+
+      if (cloudRow && cloudRow.data !== null && cloudRow.data !== undefined) {
+        const previousDecision = localStorage.getItem(nxCloudDecisionKey(user.id));
+        if (previousDecision === "keep") {
+          nxCloudBackupEnabled = false;
+          nxCloudBackupHasExisting = true;
+          nxStatus("Your device data is active. The previous cloud backup is preserved and automatic backup is paused.", "ok");
+        } else if (previousDecision === "restore" || previousDecision === "transferred") {
+          nxCloudBackupEnabled = previousDecision === "restore" && !!preference.enabled;
+          nxCloudBackupHasExisting = true;
+          nxStatus(nxCloudBackupEnabled ? "Cloud backup is connected and enabled." : "Cloud data is available. Automatic backup remains OFF.", "ok");
+        } else {
+          await nxHandleExistingCloudBackup(user, cloudRow, preference);
+        }
+      } else {
+        nxCloudBackupHasExisting = false;
+        if (nxHasGuestData(state)) {
+          await nxHandleNewAccountDataChoice(user.id, preference);
+        } else {
+          nxCloudBackupEnabled = !!preference.enabled;
+          if (preference.error) {
+            localStorage.setItem(nxPauseKey(user.id), "1");
+            nxCloudBackupEnabled = false;
+            nxStatus("Account connected. Backup permission could not be checked, so automatic backup is OFF for safety.", "error");
+          } else {
+            nxStatus(nxCloudBackupEnabled
+              ? "Account connected. Your previously saved cloud-backup permission is active."
+              : "Account connected. Cloud backup is OFF. Your data stays on this device until you choose otherwise.", "ok");
+          }
+        }
+      }
+      renderAccount();
+      renderHeaderAndTicker();
+    })();
+
+    const tracked = work.catch((error) => {
+      handledAuthUserId = "";
+      nxCloudBackupEnabled = false;
+      localStorage.setItem(nxPauseKey(user.id), "1");
+      nxStatus("Account safety setup could not finish. No automatic backup was started and your device data was kept. " + (error.message || "Refresh and retry."), "error");
+      const card = document.getElementById("accountCard");
+      if (card && !document.getElementById("nxRetrySetupBtn")) {
+        const retry = document.createElement("button");
+        retry.id = "nxRetrySetupBtn";
+        retry.className = "secondary-btn";
+        retry.style.width = "100%";
+        retry.style.marginTop = "8px";
+        retry.textContent = "Retry account safety check";
+        retry.onclick = () => { retry.remove(); applyCloudSession(currentNexoraUser); };
+        card.appendChild(retry);
+      }
+    }).finally(() => {
+      if (nxPendingSession && nxPendingSession.id === user.id) nxPendingSession = null;
+      renderAccount();
+    });
+    nxPendingSession = { id: user.id, promise: tracked };
+    return tracked;
+  };
+
+  nexoraSignUp = async function () {
+    if (!supabaseClient) { nxStatus("Login service unavailable.", "error"); return; }
+    const email = document.getElementById("accountEmail")?.value.trim() || "";
+    const password = document.getElementById("accountPassword")?.value || "";
+    if (!email || !password) { nxStatus("Enter email and password.", "error"); return; }
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) { nxStatus(error.message, "error"); return; }
+    if (data?.session?.user) await applyCloudSession(data.session.user);
+    else nxStatus("Account created. Verify your email, then log in to choose what happens to your guest data. No data has been uploaded yet.", "ok");
+  };
+
+  nexoraSignIn = async function () {
+    if (!supabaseClient) { nxStatus("Login service unavailable.", "error"); return; }
+    const email = document.getElementById("accountEmail")?.value.trim() || "";
+    const password = document.getElementById("accountPassword")?.value || "";
+    if (!email || !password) { nxStatus("Enter email and password.", "error"); return; }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) { nxStatus(error.message, "error"); return; }
+    if (data?.user) await applyCloudSession(data.user);
+  };
+
+  nexoraSignOut = async function () {
+    if (!supabaseClient || !currentNexoraUser) return;
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) { nxStatus("Could not log out: " + error.message, "error"); return; }
+    clearTimeout(cloudSaveTimer);
+    const oldUserId = currentNexoraUser.id;
+    currentNexoraUser = null;
+    handledAuthUserId = "";
+    localStorage.removeItem(nxCloudDecisionKey(oldUserId));
+    nxCloudBackupEnabled = false;
+    nxCloudBackupHasExisting = false;
+    nxPendingSession = null;
+    renderAccount();
+    renderHeaderAndTicker();
+    nxStatus("Logged out. Your device data remains on this phone.", "ok");
+  };
+
+  function nxRegisterServiceWorker() {
+    if (!("serviceWorker" in navigator) || location.protocol !== "https:") return;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      const reloadKey = "nexora_sw_reloaded_" + NX_UPDATE_ID;
+      if (sessionStorage.getItem(reloadKey) === "1") return;
+      sessionStorage.setItem(reloadKey, "1");
+      location.reload();
+    });
+    const register = () => {
+      navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })
+        .then((registration) => registration.update())
+        .catch((error) => console.warn("NEXORA service worker registration:", error));
+    };
+    if (document.readyState === "complete") register();
+    else window.addEventListener("load", register, { once: true });
+  }
+
+  if (supabaseClient) {
+    supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT" && currentNexoraUser?.id) {
+        localStorage.removeItem(nxCloudDecisionKey(currentNexoraUser.id));
+      }
+    });
+  }
+
+  nxAddStyles();
+  nxSetupHeaderProfile();
+  nxUpdateNoticePromise = nxShowUpdateNoticeOnce();
+  renderAccount();
+  renderHeaderAndTicker();
+  nxUpdateNoticePromise.then(nxRegisterServiceWorker);
+})();
+/script>
 </body>
 </html>
