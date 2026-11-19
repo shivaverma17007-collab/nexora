@@ -1,5 +1,4 @@
-
-const CACHE = 'nexora-v3-20261117';
+const CACHE = 'nexora-v4-20261119';
 const ASSETS = [
   './',
   './index.html',
@@ -48,30 +47,22 @@ self.addEventListener('fetch', event => {
         .then(response => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE).then(cache =>
-              cache.put(request, copy)
-            );
+            caches.open(CACHE).then(cache => cache.put(request, copy));
           }
           return response;
         })
         .catch(async () => {
-          return (
-            await caches.match(request) ||
-            await caches.match('./index.html')
-          );
+          return (await caches.match(request)) || (await caches.match('./index.html'));
         })
     );
   } else {
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;
-
         return fetch(request).then(response => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE).then(cache =>
-              cache.put(request, copy)
-            );
+            caches.open(CACHE).then(cache => cache.put(request, copy));
           }
           return response;
         });
