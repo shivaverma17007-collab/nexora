@@ -2248,34 +2248,117 @@ initNexoraAuth();
     }
   };
 
-  window.enableCloudBackup = async function () {
-    if (!currentNexoraUser || !supabaseClient) { openAuthModal(); return; }
-    if (cloudBusy) return;
-    const warning = nxCloudBackupHasExisting
-      ? "A cloud backup already exists for this account. Enabling backup will upload this device's current NEXORA data and replace that cloud copy only if the upload succeeds. The old copy is not deleted first.\n\nContinue?"
-      : "This will upload the current NEXORA data from this device to your account once, then enable automatic backup for future changes.\n\nContinue?";
-    if (!confirm(warning)) return;
+window.enableCloudBackup = async function () {
+  if (!currentNexoraUser || !supabaseClient) {
+    openAuthModal();
+    return;
+  }
 
-    cloudBusy = true;
-    renderAccount();
-    nxStatus("Saving your backup permission…", "busy");
-    try {
+  if (cloudBusy) return;
+
+  cloudBusy = true;
+  renderAccount();
+  nxStatus("Checking your existing cloud backup…", "busy");
+
+  try {
+    // Fetch the latest cloud copy without modifying it.
+    const { data: cloudRow, error: cloudError } =
+      await supabaseClient
+        .from("nexora_user_data")
+        .select("data")
+        .eq("user_id", currentNexoraUser.id)
+        .maybeSingle();
+
+    if (cloudError) throw cloudError;
+
+    if (cloudRow && cloudRow.data != null) {
+      // Normalize both copies before comparing.
+      const cloudData = nxNormalizeCloudData(cloudRow.data);
+      const deviceData = nxNormalizeCloudData(state);
+
+      // Compare objects without depending on key order.
+      const stableStringify = (value) => {
+        if (Array.isArray(value)) {
+          return "[" + value.map(stableStringify).join(",") + "]";
+        }
+
+        if (value && typeof value === "object") {
+          return "{" + Object.keys(value).sort().map(
+            key => JSON.stringify(key) + ":" + stableStringify(value[key])
+          ).join(",") + "}";
+        }
+
+        return JSON.stringify(value);
+      };
+
+      const sameData =
+        stableStringify(cloudData) === stableStringify(deviceData);
+
+      if (!sameData) {
+        nxCloudBackupEnabled = false;
+        nxCloudBackupHasExisting = true;
+
+        nxStatus(
+          "Your device data differs from the existing cloud backup. Backup remains OFF. Your previous cloud data has not been changed.",
+          "error"
+        );
+
+        return;
+      }
+
+      // Both copies match: enable permission only.
+      // Do NOT upload or upsert nexora_user_data.
       await nxWriteBackupPreference(true);
-      nxCloudBackupEnabled = true;
-      nxStatus("Uploading your current data…", "busy");
-      await nxUploadStateOnce({ insertOnly: false });
+
       nxCloudBackupEnabled = true;
       nxCloudBackupHasExisting = true;
-      nxStatus("Cloud backup is ON. Your data was uploaded successfully.", "ok");
-    } catch (error) {
-      nxCloudBackupEnabled = false;
-      try { await nxWriteBackupPreference(false); } catch (_) { localStorage.setItem(nxPauseKey(currentNexoraUser.id), "1"); }
-      nxStatus("Backup could not be enabled. Automatic sync remains OFF; your previous cloud data has not been intentionally deleted. " + (error.message || ""), "error");
-    } finally {
-      cloudBusy = false;
-      renderAccount();
+
+      nxStatus(
+        "Cloud backup is ON. Your existing cloud data matches this device. No cloud data was overwritten.",
+        "ok"
+      );
+
+      return;
     }
-  };
+
+    // No previous cloud row exists: ask before first upload.
+    const warning =
+      "No previous cloud backup was found. This will upload the current device data and enable automatic cloud backup.\n\nContinue?";
+
+    if (!confirm(warning)) return;
+
+    await nxWriteBackupPreference(true);
+    nxCloudBackupEnabled = true;
+
+    await nxUploadStateOnce({ insertOnly: true });
+
+    nxStatus(
+      "Cloud backup is ON. Your data was uploaded successfully.",
+      "ok"
+    );
+
+  } catch (error) {
+    nxCloudBackupEnabled = false;
+
+    try {
+      await nxWriteBackupPreference(false);
+    } catch (_) {
+      if (currentNexoraUser) {
+        localStorage.setItem(nxPauseKey(currentNexoraUser.id), "1");
+      }
+    }
+
+    nxStatus(
+      "Backup could not be enabled. Automatic backup remains OFF. " +
+      (error.message || "Please try again."),
+      "error"
+    );
+
+  } finally {
+    cloudBusy = false;
+    renderAccount();
+  }
+};
 
   applyCloudSession = async function (user) {
     if (!user || !supabaseClient) return;
