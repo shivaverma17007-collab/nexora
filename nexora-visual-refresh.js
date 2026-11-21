@@ -112,9 +112,9 @@
     .nx-v2-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(8,7,20,.86) 0%,rgba(8,7,20,.53) 48%,rgba(8,7,20,.12) 100%),linear-gradient(0deg,rgba(7,6,18,.56),transparent 62%)}
     .nx-v2-hero:after{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 80% 15%,rgba(255,255,255,.18),transparent 22%)}
     .nx-v2-hero.home{min-height:315px;background-image:url('./nexora-home-scene.jpg');background-position:center 42%}
-    .nx-v2-hero.discipline{min-height:315px;background-image:url('./nexora-discipline-scene.png');background-position:64% 42%}
-    .nx-v2-hero.study{min-height:285px;background-image:url('./nexora-study-scene.png');background-position:center 53%}
-    .nx-v2-hero.mindful{min-height:285px;background-image:url('./nexora-mindful-scene.png');background-position:center 50%}
+    .nx-v2-hero.discipline{min-height:315px;background-image:url('./nexora-discipline-scene.jpg');background-position:64% 42%}
+    .nx-v2-hero.study{min-height:285px;background-image:url('./nexora-study-scene.jpg');background-position:center 53%}
+    .nx-v2-hero.mindful{min-height:285px;background-image:url('./nexora-mindful-scene.jpg');background-position:center 50%}
     .nx-v2-hero-copy{max-width:450px;text-shadow:0 2px 18px rgba(0,0,0,.48)}
     .nx-v2-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;color:#eadcff;font-size:10px;font-weight:950;letter-spacing:.19em;text-transform:uppercase}
     .nx-v2-kicker:before{content:"";width:21px;height:2px;background:#d6b474;border-radius:99px}
