@@ -279,7 +279,7 @@
 
   function runHeroAction(action) {
     if (action === 'trackers') {
-      if (typeof window.navigate === 'function') window.navigate('trackers');
+      if (typeof window.navigate === 'function') window.navigate('analytics');
       return;
     }
     if (action === 'journey') {
@@ -349,7 +349,7 @@
     if (trackerCta && trackerCta.dataset.nxV2Bound !== '1') {
       trackerCta.dataset.nxV2Bound = '1';
       trackerCta.addEventListener('click', () => {
-        if (typeof window.navigate === 'function') window.navigate('trackers');
+        if (typeof window.navigate === 'function') window.navigate('analytics');
       });
     }
     root.querySelectorAll('[data-nx-open]').forEach((button) => {
