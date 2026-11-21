@@ -1,52 +1,56 @@
-/* NEXORA Visual Refresh v1 — additive presentation layer
-   Load after nexora-experience.js. Keeps the existing data/auth functions intact. */
-(() => {
-  'use strict';
-  const $ = (id) => document.getElementById(id);
-  const style = document.createElement('style');
-  style.id = 'nexoraVisualRefreshStyles';
-  style.textContent = `
-    :root{--nx-accent:#7653e8;--nx-glow:rgba(118,83,232,.22)}
-    body{--primary:var(--nx-accent);--primary-soft:color-mix(in srgb,var(--nx-accent) 13%,var(--surface));}
-    body.nx-visual{background:var(--bg)}
-    body.nx-visual .app{max-width:760px;padding-bottom:104px}
-    body.nx-visual .topbar{border-radius:0 0 20px 20px}
-    body.nx-visual .brandmark{background:linear-gradient(145deg,#b9a3ff,#7653e8 60%,#43269b);border-radius:13px}
-    body.nx-visual .brandmark:after{content:'N';font-weight:950}
-    body.nx-visual .brandmark{font-size:0}
-    body.nx-visual .hero,body.nx-visual .card{transition:transform .22s ease,box-shadow .22s ease}
-    body.nx-visual .card{border-radius:22px}
-    .nx-bottom-nav{position:fixed;z-index:1000;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(720px,calc(100% - 22px));display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:8px;border:1px solid var(--line);border-radius:23px;background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(18px);box-shadow:0 12px 38px rgba(15,10,35,.18)}
-    .nx-bottom-nav button{min-width:0;display:grid;place-items:center;gap:2px;padding:7px 3px;border-radius:15px;background:transparent;color:var(--muted);font-size:10px;font-weight:800}
-    .nx-bottom-nav button b{font-size:20px;line-height:1.2}.nx-bottom-nav button.active{background:var(--primary-soft);color:var(--primary)}
-    .nx-discipline-hero{position:relative;min-height:390px;overflow:hidden;border-radius:26px;margin:8px 0 18px;background:#101b42 url('./nexora-krishna-parth.png') center 36%/cover no-repeat;color:#fff;display:flex;align-items:flex-end;box-shadow:0 18px 42px rgba(30,24,74,.25)}
-    .nx-discipline-hero:before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,10,30,.03) 18%,rgba(7,10,30,.22) 48%,rgba(7,10,30,.91) 100%)}
-    .nx-discipline-copy{position:relative;z-index:1;padding:22px;width:100%}.nx-discipline-copy .nx-kicker{font-size:10px;letter-spacing:.18em;font-weight:900;color:#f6d99c}.nx-discipline-copy h1{color:#fff;font-size:28px;margin:7px 0}.nx-discipline-copy p{color:#f1e9dc;font-size:13px;line-height:1.55;margin:0 0 14px;max-width:440px}.nx-gita-line{font-family:Georgia,serif;font-size:17px;color:#ffe5ad;margin:0 0 13px}
-    .nx-birds{position:relative;height:32px;overflow:hidden;margin:4px 0 10px;pointer-events:none}.nx-birds span{position:absolute;left:-10%;font-size:20px;animation:nxFly 17s linear infinite;filter:drop-shadow(0 2px 4px #0002)}.nx-birds span:nth-child(2){top:8px;animation-duration:23s;animation-delay:-8s;font-size:15px}.nx-birds span:nth-child(3){top:0;animation-duration:20s;animation-delay:-13s;font-size:17px}@keyframes nxFly{to{left:110%;transform:translateY(-7px) rotate(4deg)}}
-    .nx-study-scene{position:relative;overflow:hidden;min-height:170px;border-radius:22px;margin:14px 0;padding:20px;background:linear-gradient(135deg,#211a3a,#45316b 55%,#b18a55);color:#fff;box-shadow:0 14px 32px rgba(45,30,70,.2)}.nx-study-scene:after{content:'📚';position:absolute;right:16px;bottom:10px;font-size:68px;opacity:.5}.nx-study-scene h3{color:#fff;font-family:Georgia,serif;font-size:22px}.nx-book{position:relative;z-index:1;width:190px;height:95px;margin:14px auto 0;perspective:600px}.nx-book-page{position:absolute;top:0;width:50%;height:100%;background:linear-gradient(110deg,#fff5d9,#d9c49c);border:1px solid #b9a47d;box-shadow:0 5px 12px #140d2680;transform-origin:right center;border-radius:5px 2px 2px 5px}.nx-book-page.right{left:50%;transform-origin:left center;border-radius:2px 5px 5px 2px}.nx-book-page.turn{animation:nxPageTurn 3.6s ease-in-out infinite}.nx-book-page.right{animation-delay:1.8s}@keyframes nxPageTurn{0%,15%{transform:rotateY(0)}48%,60%{transform:rotateY(-155deg)}85%,100%{transform:rotateY(0)}}
-    .nx-lofi{display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink)}.nx-lofi-art{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#9a7be8,#332456);color:#fff;font-size:22px}.nx-lofi small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
-    .nx-underwater{position:relative;overflow:hidden;min-height:190px;border-radius:23px;margin:12px 0;background:radial-gradient(ellipse at 50% 0%,#5bc5ef 0%,#12649a 42%,#08213e 100%);color:#fff;padding:18px}.nx-underwater:before,.nx-underwater:after{content:'';position:absolute;inset:auto -10% -45px;height:100px;background:radial-gradient(ellipse,#36c5b3aa,transparent 65%);filter:blur(8px)}.nx-fish{position:absolute;font-size:25px;animation:nxSwim 12s ease-in-out infinite alternate}.nx-fish.f2{top:88px;left:65%;animation-delay:-4s;font-size:19px}.nx-fish.f3{top:130px;left:24%;animation-delay:-7s;font-size:16px}@keyframes nxSwim{from{transform:translateX(-24px) scaleX(1)}to{transform:translateX(65px) scaleX(-1)}}.nx-bubble{position:absolute;bottom:-12px;width:7px;height:7px;border:1px solid #d9f8ff;border-radius:50%;animation:nxBubble 7s linear infinite}.nx-bubble.b2{left:70%;animation-delay:-3s}.nx-bubble.b3{left:42%;animation-delay:-5s}@keyframes nxBubble{to{transform:translateY(-210px);opacity:0}}
-    body.dark .nx-study-scene{box-shadow:0 16px 38px rgba(0,0,0,.28)}
-    @media(prefers-reduced-motion:reduce){.nx-birds span,.nx-book-page,.nx-fish,.nx-bubble{animation:none!important}}
-    @media(max-width:420px){.nx-discipline-hero{min-height:355px;background-position:42% center}.nx-discipline-copy h1{font-size:25px}}
-  `;
-  document.head.appendChild(style);
-
-  function makeNav(){
-    if ($('nxVisualBottomNav')) return;
-    const nav=document.createElement('nav');nav.id='nxVisualBottomNav';nav.className='nx-bottom-nav';nav.setAttribute('aria-label','Main navigation');
-    const items=[['home','⌂','Home'],['disciplines','✦','Discipline'],['study','▤','Study'],['mind','◌','Mindful']];
-    items.forEach(([page,icon,label])=>{const b=document.createElement('button');b.type='button';b.dataset.page=page;b.innerHTML=`<b aria-hidden="true">${icon}</b><span>${label}</span>`;b.addEventListener('click',()=>{if(typeof window.navigate==='function')window.navigate(page);setActive(page)});nav.appendChild(b)});
-    document.body.appendChild(nav);setActive('home');
-  }
-  function setActive(page){document.querySelectorAll('#nxVisualBottomNav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page))}
-  function simplifyHub(){document.querySelectorAll('.hub-link').forEach(b=>{const p=b.dataset.page;if(!['home','disciplines','study','mind'].includes(p))b.hidden=true});}
-  function addDisciplineScene(){const page=$('disciplinesPage');if(!page||$('nxDisciplineHero'))return;const oldHead=page.querySelector('.page-head');if(oldHead)oldHead.hidden=true;const hero=document.createElement('section');hero.id='nxDisciplineHero';hero.className='nx-discipline-hero';hero.innerHTML=`<div class="nx-discipline-copy"><div class="nx-kicker">DISCIPLINE · DHARMA · DAILY ACTION</div><h1>Utho, Parth.</h1><div class="nx-gita-line">“Karmanye vadhikaraste…”</div><p>Shri Krishna ke margdarshan se prerna lo. Apna kartavya chuno, chhote kadam lo, aur har din apne lakshya ki taraf badho.</p><button class="primary-btn" type="button" onclick="document.getElementById('disciplineList')?.scrollIntoView({behavior:'smooth',block:'start'})">Begin your discipline</button></div>`;page.insertBefore(hero,page.firstChild);}
-  function addHomeBirds(){const home=$('homePage');if(!home||$('nxHomeBirds'))return;const birds=document.createElement('div');birds.id='nxHomeBirds';birds.className='nx-birds';birds.innerHTML='<span>🕊️</span><span>🕊️</span><span>🕊️</span>';const head=home.querySelector('.page-head');if(head)head.after(birds);}
-  function addStudyScene(){const page=$('studyPage');if(!page||$('nxStudyScene'))return;const scene=document.createElement('section');scene.id='nxStudyScene';scene.className='nx-study-scene';scene.innerHTML='<div class="eyebrow" style="color:#e8d8ff">QUIET STUDY CORNER</div><h3>Turn the page. Begin again.</h3><div class="nx-book" aria-label="Animated open book"><span class="nx-book-page turn"></span><span class="nx-book-page right"></span></div>';const head=page.querySelector('.page-head');if(head)head.after(scene);const lofi=document.createElement('div');lofi.className='nx-lofi';lofi.innerHTML='<div class="nx-lofi-art">♫</div><div style="flex:1;min-width:0"><b>Lo-fi study room</b><small>Ambient music player · audio track can be added in the next pass</small></div><span aria-hidden="true">♪</span>';scene.after(lofi);}
-  function addMindScene(){const page=$('mindPage');if(!page||$('nxUnderwater'))return;const water=document.createElement('section');water.id='nxUnderwater';water.className='nx-underwater';water.innerHTML='<div style="position:relative;z-index:2"><div class="eyebrow" style="color:#c9f3ff">A MOMENT UNDERWATER</div><h2 style="color:#fff;margin:7px 0">Slow down. Breathe.</h2><p style="color:#d9f6ff;font-size:12px;margin:0">Let your thoughts drift like water.</p></div><span class="nx-fish">🐠</span><span class="nx-fish f2">🐟</span><span class="nx-fish f3">🐠</span><i class="nx-bubble" style="left:15%"></i><i class="nx-bubble b2"></i><i class="nx-bubble b3"></i>';const head=page.querySelector('.page-head');if(head)head.after(water);}
-  function boot(){document.body.classList.add('nx-visual');makeNav();simplifyHub();addDisciplineScene();addHomeBirds();addStudyScene();addMindScene();}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  const originalNavigate=window.navigate;
-  if(typeof originalNavigate==='function')window.navigate=function(page){const result=originalNavigate.apply(this,arguments);if(result)setActive(page);return result};
+/* NEXORA cinematic visual layer. Preserves existing app/data logic. */
+(()=>{'use strict';if(window.__NX_VISUAL_V1__)return;window.__NX_VISUAL_V1__=true;
+const $=id=>document.getElementById(id);
+const paths={
+home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+discipline:'<path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z"/>',
+study:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 5.5v17M8 7h8M8 11h8"/>',
+mindful:'<path d="M2 8c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 7 0M2 14c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 7 0M2 20c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 7 0"/>',
+timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6M12 2v3"/>',
+moon:'<path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5z"/>',
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+menu:'<path d="M4 6h16M4 12h16M4 18h16"/>'};
+const svg=(n)=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[n]}</svg>`;
+function styles(){if($('nxVisualStyles'))return;let s=document.createElement('style');s.id='nxVisualStyles';s.textContent=`
+:root{--nx-violet:#8b5cf6}
+body{padding-bottom:calc(100px + env(safe-area-inset-bottom))!important}
+.app{padding-bottom:calc(110px + env(safe-area-inset-bottom))!important}
+.topbar{grid-template-columns:44px minmax(0,1fr) auto!important;min-height:76px!important}
+.topbar .brandmark{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#d6a5ff,#853cff 55%,#4d24a8);box-shadow:0 0 22px #8b5cf688;font-size:0;animation:none}
+.topbar .brandmark svg{width:28px;height:28px}
+.topbar .brand-title{font-size:17px;letter-spacing:.14em}
+#nxBottomNav{position:fixed!important;left:10px!important;right:10px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;width:auto!important;z-index:60!important;display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:4px!important;padding:8px!important;min-height:70px!important;border-radius:25px!important;background:color-mix(in srgb,var(--surface) 90%,transparent)!important;border:1px solid var(--line)!important;box-shadow:0 12px 38px #0003!important;backdrop-filter:blur(22px)!important}
+#nxBottomNav .nx-nav-item{min-width:0!important;min-height:54px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;border:0!important;border-radius:17px!important;background:transparent!important;color:var(--muted)!important;padding:5px 2px!important;font-size:10px!important;font-weight:800!important}
+#nxBottomNav .nx-nav-item b{font-size:0!important;display:grid!important;place-items:center!important}
+#nxBottomNav .nx-nav-item.active{background:linear-gradient(145deg,#8b5cf6,#5b35ca)!important;color:#fff!important}
+.nova-fab{bottom:calc(96px + env(safe-area-inset-bottom))!important;z-index:55!important}
+.nova-panel{bottom:calc(164px + env(safe-area-inset-bottom))!important;z-index:56!important}
+.mind-fab{display:none!important}
+.nx-scene{position:relative;isolation:isolate;overflow:hidden;min-height:225px;margin:12px 0 18px;border-radius:27px;background-size:cover;background-position:center;box-shadow:0 18px 42px #1c144133;display:flex;align-items:flex-end;padding:22px;color:white}
+.nx-scene:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#08091dc9,transparent 80%)}
+.nx-scene:after{content:"";position:absolute;inset:-30%;z-index:-1;background:radial-gradient(circle at 78% 22%,#ffffff40,transparent 18%);animation:nxGlow 9s ease-in-out infinite alternate}
+.nx-scene-copy{max-width:92%;text-shadow:0 2px 12px #0008}
+.nx-scene-kicker{font-size:10px;letter-spacing:.18em;font-weight:900;margin-bottom:8px}
+.nx-scene h2{color:white!important;font-size:clamp(23px,5vw,32px);line-height:1.06;margin:0 0 7px!important}
+.nx-scene p{color:#ffffffdf!important;font-size:13px;margin:0!important}
+.nx-scene-home{background-image:url('./nexora-home-scene.png')}
+.nx-scene-discipline{background-image:url('./nexora-discipline-scene.png');min-height:280px;background-position:center 38%}
+.nx-scene-study{background-image:url('./nexora-study-scene.png');min-height:240px}
+.nx-scene-mindful{background-image:url('./nexora-mindful-scene.png');min-height:250px}
+body.dark .nx-scene{filter:brightness(.84) saturate(.95)}
+.nx-bird{position:absolute;top:25%;left:-10%;width:22px;height:9px;border-top:2px solid white;border-radius:50%;animation:nxBird 18s linear infinite}
+.nx-bird:after{content:"";position:absolute;left:10px;top:-2px;width:15px;height:8px;border-top:2px solid white;border-radius:50%;transform:rotate(-25deg)}
+.nx-bird.b2{top:38%;animation-delay:-8s}
+@keyframes nxGlow{to{transform:translate(5%,3%)}}
+@keyframes nxBird{to{left:110%;top:12%}}
+@media(prefers-reduced-motion:reduce){.nx-scene:after,.nx-bird{animation:none!important}}
+`;document.head.append(s)}
+function header(){let b=document.querySelector('.topbar .brand');if(b){let m=b.querySelector('.brandmark');if(!m){m=document.createElement('span');m.className='brandmark';b.prepend(m)}if(!m.querySelector('svg'))m.innerHTML='<svg viewBox="0 0 32 32" fill="none"><path d="M5 25V7l22 18V7" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>'}document.querySelectorAll('.topbar .icon-btn').forEach(x=>{let t=(x.title||x.getAttribute('aria-label')||'').toLowerCase();if(x.id==='themeBtn'){let wanted=document.body.classList.contains('dark')?'sun':'moon';if(x.dataset.nxIcon!==wanted){x.innerHTML=svg(wanted);x.dataset.nxIcon=wanted}}else if(t.includes('stopwatch')||t.includes('timer')){if(x.dataset.nxIcon!=='timer'){x.innerHTML=svg('timer');x.dataset.nxIcon='timer'}}else if(t.includes('hub')||t.includes('menu')){if(x.dataset.nxIcon!=='menu'){x.innerHTML=svg('menu');x.dataset.nxIcon='menu'}}})}
+function footer(){let n=$('nxBottomNav');if(!n)return;let current=[...n.querySelectorAll('.nx-nav-item')].map(x=>x.dataset.nxPage).join(',');if(current!=='home,disciplines,study,mind')n.innerHTML=[['home','home','Home'],['disciplines','discipline','Discipline'],['study','study','Study'],['mind','mindful','Mindful']].map(([p,i,l])=>`<button type="button" class="nx-nav-item" data-nx-page="${p}" onclick="window.nxVisualNavigate('${p}')"><b>${svg(i)}</b><span>${l}</span></button>`).join('');sync()}
+window.nxVisualNavigate=p=>window.navigate?.(p==='mind'?'mind':p);
+function sync(){let p=document.querySelector('.page.active')?.id?.replace(/Page$/,'')||'home';document.querySelectorAll('#nxBottomNav .nx-nav-item').forEach(b=>b.classList.toggle('active',b.dataset.nxPage===p))}
+function scenes(){[['homePage','home','YOUR SPACE TO GROW','Your day. Your goals. Your next small win.'],['disciplinesPage','discipline','THE PATH OF DISCIPLINE','Arise, O Parth. Do your duty with focus.'],['studyPage','study','QUIET STUDY CORNER','Turn the page. Begin again.'],['mindPage','mindful','A MOMENT UNDERWATER','Slow down. Breathe. Let your thoughts drift like water.']].forEach(([id,k,t,d])=>{let p=$(id);if(!p||p.querySelector('.nx-scene'))return;let e=document.createElement('section');e.className='nx-scene nx-scene-'+k;e.innerHTML=(k==='home'?'<i class="nx-bird"></i><i class="nx-bird b2"></i>':'')+`<div class="nx-scene-copy"><div class="nx-scene-kicker">${t}</div><h2>${k==='discipline'?'Arise, O Parth.':k==='study'?'Turn the page. Begin again.':k==='mindful'?'Slow down. Breathe.':'NEXORA'}</h2><p>${d}</p></div>`;let h=p.querySelector('.page-head');h?h.insertAdjacentElement('afterend',e):p.prepend(e)})}
+function run(){styles();header();footer();scenes();sync()}
+function boot(){run();new MutationObserver(()=>run()).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});document.addEventListener('click',e=>{if(e.target.closest('#themeBtn'))setTimeout(run,80);if(e.target.closest('#nxBottomNav'))setTimeout(sync,100)},true)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
