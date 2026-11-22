@@ -1,59 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-IN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terms of Service | NEXORA</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 850px;
-      margin: 40px auto;
-      padding: 0 20px;
-      line-height: 1.7;
-      color: #222;
-      background: #fff;
-    }
-    h1, h2 { color: #222; }
-    .updated { color: #666; font-size: 14px; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Terms of Use | NEXORA</title>
+  <link rel="stylesheet" href="./assets/nexora.css">
+  <style>.legal{max-width:780px;margin:30px auto;padding:0 18px 60px}.legal .surface-card{margin:16px 0}.legal p,.legal li{font-size:13px;line-height:1.7;color:var(--muted)}.legal h2{margin-top:22px}.legal a{color:var(--primary);text-decoration:underline}</style>
 </head>
 <body>
-
-<h1>Terms of Service</h1>
-<p class="updated">Last updated: November 17, 2026</p>
-
-<p>Welcome to NEXORA. By accessing or using NEXORA, you agree to these Terms of Service. If you do not agree, please do not use the application.</p>
-
-<h2>1. About NEXORA</h2>
-<p>NEXORA is a productivity and study application designed to help users manage tasks, study activities, journals, routines and personal trackers.</p>
-
-<h2>2. Acceptable Use</h2>
-<p>You agree to use NEXORA responsibly and lawfully. You must not attempt to disrupt the application, interfere with its operation, or use it for unlawful purposes.</p>
-
-<h2>3. Your Data</h2>
-<p>In the current version, information you enter is stored locally in your browser on your device. You are responsible for maintaining your own backups of important information. Clearing browser data or changing devices may cause stored information to become unavailable.</p>
-
-<h2>4. No Account-Based Cloud Service</h2>
-<p>The current version does not provide account-based cloud synchronisation or an external AI service. Features and services may change in future versions.</p>
-
-<h2>5. Notifications</h2>
-<p>Notification features depend on your browser and device permissions. NEXORA does not guarantee that notifications will always be delivered or work in the background.</p>
-
-<h2>6. Availability and Changes</h2>
-<p>We aim to keep NEXORA available and working, but uninterrupted access is not guaranteed. Features may be modified, suspended or discontinued as the application develops.</p>
-
-<h2>7. Disclaimer</h2>
-<p>NEXORA is provided for general productivity and study assistance. It is not a substitute for professional, educational, medical or other specialised advice. Use the application at your own discretion.</p>
-
-<h2>8. Limitation of Liability</h2>
-<p>To the extent permitted by applicable law, NEXORA is not responsible for loss of locally stored data, service interruptions, or issues arising from your browser, device or third-party services.</p>
-
-<h2>9. Changes to These Terms</h2>
-<p>These Terms may be updated as NEXORA evolves. The latest version will be published on this page.</p>
-
-<h2>10. Contact</h2>
-<p>For questions about these Terms, please use the contact email displayed on the NEXORA Google OAuth consent screen.</p>
-
+  <main class="legal">
+    <a class="text-button" href="./index.html">← Back to NEXORA</a>
+    <section class="surface-card">
+      <span class="eyebrow">NEXORA · TERMS</span>
+      <h1>Terms of Use</h1>
+      <p>Last reviewed: November 22, 2026</p>
+      <p>These are draft terms for the current NEXORA application build. They should be reviewed for the project owner's business, jurisdiction and release plans before public launch.</p>
+    </section>
+    <section class="surface-card">
+      <h2>1. About NEXORA</h2>
+      <p>NEXORA is a productivity, study and wellbeing application. It provides personal trackers, tasks, study sessions, a focus timer, NEXORA Flow lo-fi MP3 streaming, guided meditation, a private journal and optional community features.</p>
+    </section>
+    <section class="surface-card">
+      <h2>2. Your account and information</h2>
+      <p>You may explore personal features as a guest. Account-based services depend on the authentication providers configured for the project. You are responsible for keeping access to your account secure and for the content you submit.</p>
+      <p>Cloud backup is optional and is enabled only through an explicit choice in the app. You should export backups of important information and not rely on any single storage location.</p>
+    </section>
+    <section class="surface-card">
+      <h2>3. Community conduct</h2>
+      <p>You agree not to use NEXORA to post unlawful, abusive, threatening, deceptive, infringing or otherwise harmful content, or to interfere with the service or other users. Profile privacy and follow controls depend on the deployed database policies. Public posts and reviews may be visible to other users.</p>
+    </section>
+    <section class="surface-card">
+      <h2>4. Music, meditation and study tools</h2>
+      <p>The current music player synthesizes original instrumental loops in the browser; it is not a commercial streaming service. Meditation speech depends on device/browser voice availability and ambient sound is generated in the app. Study and wellbeing tools are for general personal support, not a guarantee of academic results or professional advice.</p>
+    </section>
+    <section class="surface-card">
+      <h2>5. Availability and third-party services</h2>
+      <p>Authentication, cloud backup and community functions depend on third-party services and project configuration. Continuous availability, successful notification delivery or uninterrupted access is not guaranteed. Provider terms may also apply when you use Google, hosting or database services.</p>
+    </section>
+    <section class="surface-card">
+      <h2>6. Data, backups and account deletion</h2>
+      <p>Guest information is stored in the browser on your device. Clearing browser data or changing devices may make it unavailable. When cloud backup is enabled, the app is designed to store app-state data in the configured Supabase project, subject to its live schema and policies.</p>
+      <p>Permanent account deletion is not enabled by this frontend package. It must be implemented through a verified server-side process with confirmed deletion/cascade rules. Do not assume that sign-out deletes an account or any cloud data.</p>
+    </section>
+    <section class="surface-card">
+      <h2>7. Changes and contact</h2>
+      <p>NEXORA features and these terms may change as the application develops. For questions, use the contact address displayed on the NEXORA authentication provider's consent screen. These draft terms should be approved by the project owner before public release.</p>
+    </section>
+  </main>
 </body>
 </html>

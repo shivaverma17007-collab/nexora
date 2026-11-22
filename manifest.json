@@ -1,12 +1,12 @@
-
 {
-  "name": "NEXORA — Your little growth space",
+  "name": "NEXORA",
   "short_name": "NEXORA",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#100020",
-  "theme_color": "#6d28d9",
-  "description": "A gentle space to study, grow and feel good.",
+  "background_color": "#100e19",
+  "theme_color": "#7654cf",
+  "description": "Plan, focus, grow and find your flow.",
   "icons": [
     {
       "src": "icon-192.png",

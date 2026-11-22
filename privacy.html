@@ -1,57 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-IN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy | NEXORA</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 850px;
-      margin: 40px auto;
-      padding: 0 20px;
-      line-height: 1.7;
-      color: #222;
-      background: #fff;
-    }
-    h1, h2 { color: #222; }
-    h1 { margin-bottom: 8px; }
-    .updated { color: #666; font-size: 14px; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Privacy Notice | NEXORA</title>
+  <link rel="stylesheet" href="./assets/nexora.css">
+  <style>.legal{max-width:780px;margin:30px auto;padding:0 18px 60px}.legal .surface-card{margin:16px 0}.legal p,.legal li{font-size:13px;line-height:1.7;color:var(--muted)}.legal h2{margin-top:22px}.legal a{color:var(--primary);text-decoration:underline}</style>
 </head>
 <body>
-
-<h1>Privacy Policy</h1>
-<p class="updated">Last updated: November 17, 2026</p>
-
-<p>Welcome to NEXORA. This Privacy Policy explains how information is handled when you use the NEXORA application.</p>
-
-<h2>1. Information We Store</h2>
-<p>NEXORA stores information you enter, such as tasks, study logs, journal entries, routines and tracker data, in your browser's local storage on your device.</p>
-
-<h2>2. How Your Information Is Used</h2>
-<p>Your information is used to display and manage the features you use within NEXORA. The current version does not provide account-based cloud synchronisation.</p>
-
-<h2>3. Data Storage</h2>
-<p>Information stored in local storage remains on the browser and device where you use NEXORA. Clearing browser data, changing browsers or changing devices may remove or make this information unavailable. You are responsible for keeping your own backup of important information.</p>
-
-<h2>4. AI Features</h2>
-<p>The current version of NEXORA does not connect to an external AI service. Any assistant-style responses currently available are generated within the application.</p>
-
-<h2>5. Notifications</h2>
-<p>NEXORA may request browser notification permission. Notifications are subject to your browser and device settings. The current version does not provide guaranteed background or push notifications.</p>
-
-<h2>6. Third-Party Services</h2>
-<p>NEXORA is hosted using a third-party hosting provider. Your browser may communicate with that provider to load the application. Those services may process technical information according to their own privacy policies.</p>
-
-<h2>7. Children's Privacy</h2>
-<p>NEXORA is a general productivity and study application. It does not knowingly collect personal information through a dedicated account system in the current version.</p>
-
-<h2>8. Changes to This Policy</h2>
-<p>This Privacy Policy may be updated when NEXORA's features or data practices change. The latest version will be published on this page.</p>
-
-<h2>9. Contact</h2>
-<p>For privacy-related questions, please use the contact email displayed on the NEXORA Google OAuth consent screen.</p>
-
+  <main class="legal">
+    <a class="text-button" href="./index.html">← Back to NEXORA</a>
+    <section class="surface-card">
+      <span class="eyebrow">NEXORA · PRIVACY</span>
+      <h1>Privacy Notice</h1>
+      <p>Last reviewed: November 22, 2026</p>
+      <p>This notice describes the data handling visible in the current NEXORA application build. Your deployed project's Supabase configuration, enabled providers, database policies and hosting settings may affect the exact behaviour. Review those settings before public release.</p>
+    </section>
+    <section class="surface-card">
+      <h2>1. Information stored on your device</h2>
+      <p>When you use NEXORA as a guest, app progress is stored in your browser's local storage under the <code>nexora</code> key. It may include trackers, tasks, study logs, routines, Discipline check-ins, journal entries, profile preferences, hydration totals, meditation history and app settings.</p>
+      <p>The rebuild also makes a one-time local safety copy under <code>nexora_rebuild_v2_preflight</code> when an earlier NEXORA value exists. This copy is kept on the same browser/device; it is not a cloud backup.</p>
+    </section>
+    <section class="surface-card">
+      <h2>2. Accounts and cloud backup</h2>
+      <p>Sign-in is optional for personal use. The app source supports email/password and Google sign-in, subject to the Google provider being enabled in the connected authentication project.</p>
+      <p>When you sign in, NEXORA may read your account profile and an existing cloud data row. A guest-to-account copy or a cloud restore is presented as a user choice. Automatic cloud backup is off unless you explicitly enable it in Settings. Signing out does not remove the local device copy.</p>
+      <p>When enabled, the app is designed to send the NEXORA app-state JSON to the configured Supabase project. The exact schema, access policies, retention and hosting region must be confirmed from the live project configuration.</p>
+    </section>
+    <section class="surface-card">
+      <h2>3. Social features</h2>
+      <p>If you sign in and use Community, Profile, Posts, Likes, Follow Requests, Notifications or Reviews, the app may read or write the corresponding profile and social records in the configured Supabase project. Public profile details, posts and reviews may be visible to other users according to the deployed database policies and your profile privacy setting.</p>
+      <p>Do not publish passwords, payment details, private contact information or other sensitive information in public posts or reviews.</p>
+    </section>
+    <section class="surface-card">
+      <h2>4. Audio and meditation</h2>
+      <p>NEXORA Flow streams lo-fi MP3 recordings by Purrple Cat from the artist-published audio host under Creative Commons Attribution 4.0 (CC BY 4.0). The app displays creator credit and links to the catalogue and licence. Track audio is streamed from a third-party host, not bundled into this frontend package. Your Flow favourites, playlists, listening history, volume and playback preferences are stored in this browser's local storage until backend sync is implemented. Meditation voice guidance uses the device/browser speech synthesis facility where available. Meditation ambient rain, water, chimes and wind are generated in the browser and are separate from NEXORA Flow.</p>
+    </section>
+    <section class="surface-card">
+      <h2>5. Third-party services</h2>
+      <p>The app uses Supabase for authentication and configured data features. It may use Google authentication when enabled. NEXORA Flow streams lo-fi MP3 recordings by Purrple Cat from the artist-published audio host under CC BY 4.0; the app displays the required creator credit and licence link. The page also loads the Supabase JavaScript client and web fonts from third-party content delivery services. Those providers process technical or account information under their own terms and privacy notices.</p>
+    </section>
+    <section class="surface-card">
+      <h2>6. Backups, loss and deletion</h2>
+      <p>Export a local JSON backup before changing browsers or devices. Clearing browser storage, uninstalling a browser or losing a device may make a guest-only copy unavailable. Cloud backup is a separate opt-in feature and should not be treated as the only copy of important records.</p>
+      <p>Permanent account deletion is not enabled by this frontend package. It requires a verified server-side deletion process and confirmed cascade rules for authentication, profiles, social content and stored app data. Do not assume that signing out or clearing browser data deletes an account or cloud records.</p>
+    </section>
+    <section class="surface-card">
+      <h2>7. Contact and changes</h2>
+      <p>For privacy questions, use the contact address displayed on the NEXORA authentication provider's consent screen. This notice should be reviewed and approved by the NEXORA project owner before the app is released publicly. It may be updated when data practices change.</p>
+    </section>
+  </main>
 </body>
 </html>
