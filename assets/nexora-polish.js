@@ -108,7 +108,8 @@
     menu.setAttribute('aria-multiselectable', select.multiple ? 'true' : 'false');
     wrap.append(trigger, menu);
 
-    trigger.addEventListener('click', () => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
       if (wrap.classList.contains('nx-open')) { closeOpen(); return; }
       closeOpen();
       refresh(select);
