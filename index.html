@@ -3066,23 +3066,95 @@
     /* =====================================================================
        NOVA / KITTO AI FLOATING ASSISTANT DRAWER
        ===================================================================== */
+    let novaMessages = [];
+    let novaBusy = false;
+
+    function renderNovaMessages() {
+      const box = document.getElementById("novaMessages");
+      if (!box) return;
+      if (!novaMessages.length) {
+        box.innerHTML = '<div class="card-sub" style="text-align:center;padding:22px 8px;">Namaste! Main NOVA hoon. Apna study ya learning question poochho.</div>';
+      } else {
+        box.innerHTML = novaMessages.map(m => `
+          <div style="display:flex;justify-content:${m.role === "user" ? "flex-end" : "flex-start"};margin:8px 0;">
+            <div style="max-width:88%;padding:10px 12px;border-radius:14px;background:${m.role === "user" ? "var(--accent-primary)" : "var(--card-bg, rgba(127,127,127,.14))"};color:${m.role === "user" ? "#fff" : "var(--text-primary)"};white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(m.content)}</div>
+          </div>`).join("");
+      }
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function novaSendMessage() {
+      const input = document.getElementById("novaInput");
+      const send = document.getElementById("novaSend");
+      if (!input || novaBusy) return;
+      const message = input.value.trim();
+      if (!message) return;
+      if (!sb) { showToast("NOVA connection is unavailable. Please refresh."); return; }
+      let session;
+      try {
+        const result = await sb.auth.getSession();
+        session = result.data?.session;
+      } catch (e) {}
+      if (!session?.access_token) {
+        showToast("Please sign in again to use NOVA.");
+        return;
+      }
+      novaMessages.push({ role: "user", content: message });
+      input.value = "";
+      novaBusy = true;
+      if (send) { send.disabled = true; send.textContent = "…"; }
+      renderNovaMessages();
+      novaMessages.push({ role: "assistant", content: "NOVA is thinking…" });
+      renderNovaMessages();
+      try {
+        const response = await fetch(SUPABASE_URL + "/functions/v1/nexora-ai", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + session.access_token
+          },
+          body: JSON.stringify({
+            messages: novaMessages.filter(m => m.content !== "NOVA is thinking…").slice(-12),
+            context: { exam: state.profile.goal || "not specified", subject: "general study" }
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        novaMessages.pop();
+        if (!response.ok) throw new Error(data.error || ("NOVA request failed (" + response.status + ")."));
+        novaMessages.push({ role: "assistant", content: data.answer || "I couldn't form a reply. Please try again." });
+      } catch (error) {
+        novaMessages.pop();
+        novaMessages.push({ role: "assistant", content: error.message || "NOVA couldn't connect. Please try again." });
+      } finally {
+        novaBusy = false;
+        if (send) { send.disabled = false; send.textContent = "Send"; }
+        renderNovaMessages();
+        input?.focus();
+      }
+    }
+
     function openNovaAssistant() {
+      novaMessages = [];
       const todayMins = state.study.history.filter(s => s.date === todayStr()).reduce((a, b) => a + (b.minutes || 0), 0);
       openModal(`
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
             <h3>✦ NOVA &amp; Kitto AI</h3>
-            <span class="badge-soon">Live AI Chat Server: Coming Soon / जल्द आ रहा है</span>
+            <span class="card-sub">AI study assistant</span>
           </div>
           <button class="icon-btn" onclick="closeModal()">✕</button>
         </div>
-        <p class="card-sub" style="margin-bottom:12px;">Your built-in sanctuary companion. Today you have logged <strong>${todayMins} study mins</strong> and <strong>${state.hydration.logs[todayStr()] || 0} ml</strong> of hydration.</p>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <button class="btn btn-primary" onclick="closeModal();navigateTo('study');selectTimerPreset('Focus 25', 25, null);">▶ Start a 25-Min Deep Focus Session</button>
-          <button class="btn" onclick="closeModal();navigateTo('mindful');startMeditationSession('med_focus');">🪷 Start 5-Min Exam Clarity Meditation</button>
-          <button class="btn" onclick="closeModal();playCategoryQuick('Deep Focus');">🎧 Play Deep Focus Soundscape</button>
+        <p class="card-sub" style="margin-bottom:10px;">Aaj tumne <strong>${todayMins} study mins</strong> log kiye hain. Kuch bhi poochho—SSC, English, Maths, Reasoning ya study planning.</p>
+        <div id="novaMessages" style="height:min(46vh,390px);min-height:190px;overflow-y:auto;border:1px solid var(--border-color);border-radius:14px;padding:10px;margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="novaInput" rows="2" placeholder="NOVA se kuch poochho…" style="flex:1;min-width:0;resize:vertical;"></textarea>
+          <button class="btn btn-primary" id="novaSend" onclick="novaSendMessage()">Send</button>
         </div>
+        <p class="card-sub" style="font-size:.76rem;margin-top:8px;">NOVA ke answers AI-generated hain. Important facts ko verify karna.</p>
       `);
+      renderNovaMessages();
+      setTimeout(() => document.getElementById("novaInput")?.focus(), 0);
     }
 
     /* =====================================================================
