@@ -1244,62 +1244,11 @@
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">📝 Quizzes &amp; Exam Prep Hub</div>
-            <div class="card-sub">SSC CGL, GK/GS, Current Affairs, Grammar, Maths &amp; Reasoning</div>
-          </div>
-          <span class="badge-soon">Full PYQ Bank: Coming Soon / जल्द आ रहा है</span>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-          <span class="badge-verified">✓ Verified PYQ</span>
-          <span class="badge-ai">✨ AI-Generated Practice</span>
-          <span class="card-sub">Clearly tagged on every question</span>
-        </div>
-
-        <div id="quizLobby">
-          <div class="grid-3" style="margin-bottom:14px;">
-            <div class="stat-tile">
-              <div class="badge-verified" style="margin-bottom:6px;">Verified PYQ Sample</div>
-              <div style="font-weight:700;">SSC CGL General Awareness</div>
-              <div class="card-sub" style="margin:6px 0 10px;">Polity, History &amp; Static GK</div>
-              <button class="btn btn-primary btn-sm" onclick="startSampleQuiz('gk')">Start Drill</button>
-            </div>
-            <div class="stat-tile">
-              <div class="badge-ai" style="margin-bottom:6px;">AI-Generated Sample</div>
-              <div style="font-weight:700;">English Grammar &amp; Vocab</div>
-              <div class="card-sub" style="margin:6px 0 10px;">Idioms, One-Word &amp; Error Spotting</div>
-              <button class="btn btn-primary btn-sm" onclick="startSampleQuiz('english')">Start Drill</button>
-            </div>
-            <div class="stat-tile">
-              <div class="badge-verified" style="margin-bottom:6px;">Verified PYQ Sample</div>
-              <div style="font-weight:700;">Quant &amp; Reasoning</div>
-              <div class="card-sub" style="margin:6px 0 10px;">Number Series &amp; Arithmetic</div>
-              <button class="btn btn-primary btn-sm" onclick="startSampleQuiz('quant')">Start Drill</button>
-            </div>
-          </div>
-          <div class="card-title" style="font-size:0.94rem;margin-bottom:6px;">Recent Quiz Results</div>
-          <div id="quizHistoryList"></div>
-        </div>
-
-        <div id="quizActiveStage" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-            <span id="quizSourceTag" class="badge-verified">Verified PYQ</span>
-            <span id="quizTimerBadge" class="streak-pill">⏱ 03:00</span>
-          </div>
-          <div id="quizQuestionNav" class="chip-row"></div>
-          <div style="padding:14px;border-radius:14px;background:var(--bg-input);border:1px solid var(--border-subtle);margin-bottom:12px;">
-            <div style="font-weight:700;font-size:0.98rem;margin-bottom:12px;" id="quizQuestionText"></div>
-            <div id="quizOptionsContainer"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="toggleMarkForReview()">🚩 Mark for Review</button>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-sm" onclick="stepQuizQuestion(-1)">← Prev</button>
-              <button class="btn btn-sm" onclick="stepQuizQuestion(1)">Next →</button>
-              <button class="btn btn-primary btn-sm" onclick="submitQuizAttempt()">Submit Quiz</button>
-            </div>
+            <div class="card-title">📝 Quizzes &amp; Exam Prep</div>
+            <div class="card-sub">Exam-wise practice and mock tests</div>
           </div>
         </div>
+        <div id="nqv2-mount"></div>
       </div>
     </section>
 
@@ -2916,99 +2865,7 @@
       document.getElementById("analyticsStudyChart").innerHTML = html;
     }
 
-    const SAMPLE_QUIZZES = {
-      gk: [
-        { source: "Verified PYQ", q: "Which Article of the Indian Constitution deals with the Amendment of the Constitution?", opts: ["Article 352", "Article 368", "Article 324", "Article 280"], ans: 1, exp: "Article 368 in Part XX deals with the powers of Parliament to amend the Constitution." },
-        { source: "Verified PYQ", q: "Who was the first Indian to win an individual Olympic Gold Medal?", opts: ["Milkha Singh", "Abhinav Bindra", "Neeraj Chopra", "Leander Paes"], ans: 1, exp: "Abhinav Bindra won Gold in 10m Air Rifle at the 2008 Beijing Olympics." }
-      ],
-      english: [
-        { source: "AI-Generated", q: "Choose the correct meaning of the idiom: 'To burn the midnight oil'", opts: ["To waste resources", "To work or study late into the night", "To start a quarrel", "To travel far"], ans: 1, exp: "'Burn the midnight oil' means studying or working late into the night." },
-        { source: "AI-Generated", q: "Select the correctly spelt word:", opts: ["Perseverence", "Perseverance", "Persaverance", "Perseveranse"], ans: 1, exp: "The correct spelling is 'Perseverance'." }
-      ],
-      quant: [
-        { source: "Verified PYQ", q: "Find the next term in the series: 3, 7, 15, 31, ?", opts: ["57", "63", "61", "65"], ans: 1, exp: "Each term follows (2n + 1): 31 × 2 + 1 = 63." },
-        { source: "Verified PYQ", q: "If x + 1/x = 5, what is the value of x² + 1/x²?", opts: ["25", "23", "27", "21"], ans: 1, exp: "(x + 1/x)² - 2 = 25 - 2 = 23." }
-      ]
-    };
-
-    let activeQuiz = [];
-    let quizIdx = 0;
-    let quizAnswers = {};
-    let quizMarked = {};
-    let quizTopicName = "";
-
-    function renderQuizLobby() {
-      document.getElementById("quizLobby").style.display = "block";
-      document.getElementById("quizActiveStage").style.display = "none";
-      const el = document.getElementById("quizHistoryList");
-      el.innerHTML = state.quizHistory.length
-        ? state.quizHistory.slice(0, 8).map(q => `<div class="task-row"><span>${escapeHtml(q.topic)} (${q.date})</span><span class="streak-pill">${q.score}/${q.total}</span></div>`).join("")
-        : `<div class="card-sub">No quiz attempts logged yet.</div>`;
-    }
-
-    function startSampleQuiz(key) {
-      activeQuiz = SAMPLE_QUIZZES[key] || SAMPLE_QUIZZES.gk;
-      quizTopicName = key.toUpperCase() + " Drill";
-      quizIdx = 0;
-      quizAnswers = {};
-      quizMarked = {};
-      document.getElementById("quizLobby").style.display = "none";
-      document.getElementById("quizActiveStage").style.display = "block";
-      renderQuizQuestion();
-    }
-
-    function renderQuizQuestion() {
-      const item = activeQuiz[quizIdx];
-      const tag = document.getElementById("quizSourceTag");
-      tag.className = item.source === "Verified PYQ" ? "badge-verified" : "badge-ai";
-      tag.textContent = item.source;
-
-      document.getElementById("quizQuestionNav").innerHTML = activeQuiz.map((_, i) => `
-        <button class="chip ${i === quizIdx ? "active" : ""}" onclick="quizIdx=${i};renderQuizQuestion();">
-          Q${i + 1}${quizMarked[i] ? "🚩" : ""}
-        </button>
-      `).join("");
-
-      document.getElementById("quizQuestionText").textContent = `Q${quizIdx + 1}. ${item.q}`;
-      document.getElementById("quizOptionsContainer").innerHTML = item.opts.map((opt, idx) => `
-        <div class="task-row" onclick="quizAnswers[${quizIdx}]=${idx};renderQuizQuestion();" style="cursor:pointer;${quizAnswers[quizIdx] === idx ? "border-color:var(--accent-primary);background:rgba(168,85,247,0.18);" : ""}">
-          <span>${String.fromCharCode(65 + idx)}. ${escapeHtml(opt)}</span>
-        </div>
-      `).join("");
-    }
-
-    function toggleMarkForReview() {
-      quizMarked[quizIdx] = !quizMarked[quizIdx];
-      renderQuizQuestion();
-    }
-
-    function stepQuizQuestion(delta) {
-      quizIdx = Math.max(0, Math.min(activeQuiz.length - 1, quizIdx + delta));
-      renderQuizQuestion();
-    }
-
-    function submitQuizAttempt() {
-      let score = 0;
-      const reviewHtml = activeQuiz.map((item, i) => {
-        const picked = quizAnswers[i];
-        const ok = picked === item.ans;
-        if (ok) score++;
-        return `<div style="margin-bottom:10px;padding:10px;border-radius:10px;background:var(--bg-input);">
-          <div style="font-weight:700;font-size:0.86rem;">Q${i + 1}: ${ok ? "✅ Correct" : "❌ Incorrect"}</div>
-          <div class="card-sub">${escapeHtml(item.exp)}</div>
-        </div>`;
-      }).join("");
-
-      state.quizHistory.unshift({ topic: quizTopicName, score, total: activeQuiz.length, date: todayStr() });
-      saveState();
-      openModal(`
-        <h3 style="margin-bottom:8px;">Quiz Score: ${score} / ${activeQuiz.length}</h3>
-        ${reviewHtml}
-        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-          <button class="btn btn-primary" onclick="closeModal();renderQuizLobby();">Done</button>
-        </div>
-      `);
-    }
+    /* Legacy sample quiz code removed: Quiz v2 owns this screen. */
 
     /* Private Journal */
     let selectedJournalMood = "Focused";
