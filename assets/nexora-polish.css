@@ -153,3 +153,32 @@ html[data-theme="light"] .nx-select-menu{background:linear-gradient(145deg,#fff,
 html[data-theme="light"] .nx-select-option{color:#211b32}
 html[data-theme="light"] .nx-select-option[aria-selected="true"]{background:rgba(124,58,237,.12);color:#56349b}
 html[data-theme="light"] .nx-select-option:hover,html[data-theme="light"] .nx-select-option:focus-visible{background:rgba(124,58,237,.09)}
+
+
+/* NOVA assistant: focused chat layout */
+#appModalContent.nova-modal-content{
+  width:min(100%,620px)!important;max-width:620px!important;padding:0!important;overflow:hidden!important;
+  border:1px solid rgba(190,160,255,.28)!important;
+  background:linear-gradient(155deg,#211936 0%,#130f20 72%)!important;
+}
+.nova-panel{display:flex;flex-direction:column;min-height:430px;max-height:min(82vh,760px);padding:18px;gap:12px;color:#f5f0ff}
+.nova-header{display:flex;align-items:center;gap:12px;padding-bottom:13px;border-bottom:1px solid rgba(206,185,255,.13)}
+.nova-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#7954c9,#b27ae8);font-size:24px;box-shadow:0 8px 24px rgba(137,96,210,.28)}
+.nova-heading{flex:1;min-width:0}.nova-title{font-size:1.12rem;font-weight:800;letter-spacing:.1em}.nova-title span{font-size:.68rem;letter-spacing:.12em;color:#d4b5ff;margin-left:4px}
+.nova-subtitle{font-size:.76rem;color:#b8a9d2;margin-top:3px}.nova-close{width:34px;height:34px}
+.nova-context{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:.72rem;color:#c8badf;padding:2px 1px}
+.nova-live-dot{width:7px;height:7px;border-radius:50%;background:#54d6a5;box-shadow:0 0 10px #54d6a5}.nova-context-sep{opacity:.45}
+.nova-chat{flex:1;min-height:210px;max-height:48vh;overflow:auto;padding:12px;border:1px solid rgba(202,177,255,.14);border-radius:16px;background:rgba(7,5,14,.28);scroll-behavior:smooth}
+.nova-chat:empty:after{content:"Namaste! Main NOVA hoon. SSC, Maths, English, Reasoning ya study planning—kya explore karein?";display:block;text-align:center;max-width:260px;margin:55px auto;color:#b9a9d1;font-size:.86rem;line-height:1.6}
+.nova-composer{display:flex;align-items:flex-end;gap:9px;padding:8px;border:1px solid rgba(195,167,247,.23);border-radius:16px;background:rgba(255,255,255,.045)}
+.nova-composer textarea{flex:1;min-width:0;min-height:44px;max-height:110px;padding:10px 11px!important;border:0!important;background:transparent!important;box-shadow:none!important;resize:vertical;color:#f7f2ff!important}
+.nova-send{width:43px;height:43px;min-width:43px;padding:0!important;border-radius:13px!important;font-size:1.35rem!important}
+.nova-disclaimer{font-size:.68rem;color:#9f91b8;text-align:center;margin:0}
+#appModalContent.nova-modal-content .nova-chat>div>div{line-height:1.55;font-size:.87rem}
+html[data-theme="light"] #appModalContent.nova-modal-content{background:linear-gradient(155deg,#fff,#f3effb)!important}
+html[data-theme="light"] .nova-panel{color:#211832}
+html[data-theme="light"] .nova-subtitle,html[data-theme="light"] .nova-context,html[data-theme="light"] .nova-disclaimer{color:#716287}
+html[data-theme="light"] .nova-chat{background:rgba(124,58,237,.035);border-color:rgba(124,58,237,.14)}
+html[data-theme="light"] .nova-composer{background:rgba(124,58,237,.045);border-color:rgba(124,58,237,.2)}
+html[data-theme="light"] .nova-composer textarea{color:#211832!important}
+@media(max-width:540px){.nova-panel{min-height:390px;padding:14px}.nova-chat{min-height:180px;max-height:45vh}#appModalContent.nova-modal-content{width:100%!important}}
