@@ -1632,7 +1632,9 @@
       if (viewId === "flow") renderFlowTracks();
       if (viewId === "hydration") renderHydration();
       if (viewId === "analytics") renderAnalytics();
-      if (viewId === "quizzes") renderQuizLobby();
+      if (viewId === "quizzes") {
+        if (typeof window.NEXORA_MOUNT_QUIZ === "function") window.NEXORA_MOUNT_QUIZ();
+      }
       if (viewId === "journal") renderJournal();
       if (viewId === "leaderboard") renderLeaderboard();
       if (viewId === "social") loadSocialFeed();
