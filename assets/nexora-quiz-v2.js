@@ -1,6 +1,6 @@
 /* NEXORA Quiz v2: live Supabase-backed practice and mock engine */
 (()=>{'use strict';if(window.__NEXORA_QV2)return;window.__NEXORA_QV2=true;
-const db=window.supabase?.createClient('https://reixlvsdqxlhvhzcjynq.supabase.co','sb_publishable_tOZu9amwcmUzQJN8FPTH_Q_bfOfm8uu',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'nexora-supabase-auth'}});if(!db)return;
+const db=window.nexoraSupabase||(window.supabase?.createClient('https://reixlvsdqxlhvhzcjynq.supabase.co','sb_publishable_tOZu9amwcmUzQJN8FPTH_Q_bfOfm8uu',{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'nexora-supabase-auth'}}));if(!db)return;
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const exams={'SSC CHSL':['Tier-I','Tier-II'],'SSC CGL':['Tier-I','Tier-II'],'Railway NTPC':['CBT-1','CBT-2']};
 let cat,att,qs=[],idx=0,ans={},marks={},deadline=0,timer;
