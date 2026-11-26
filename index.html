@@ -3149,21 +3149,25 @@
       novaMessages = [];
       const todayMins = state.study.history.filter(s => s.date === todayStr()).reduce((a, b) => a + (b.minutes || 0), 0);
       openModal(`
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <div>
-            <h3>✦ NOVA &amp; Kitto AI</h3>
-            <span class="card-sub">AI study assistant</span>
+        <section class="nova-panel">
+          <header class="nova-header">
+            <div class="nova-mark">✦</div>
+            <div class="nova-heading">
+              <div class="nova-title">NOVA <span>AI</span></div>
+              <div class="nova-subtitle">Your study companion · Ready to help</div>
+            </div>
+            <button class="icon-btn nova-close" onclick="closeModal()" aria-label="Close NOVA">✕</button>
+          </header>
+          <div class="nova-context"><span class="nova-live-dot"></span><span>Today: <strong>${todayMins} study minutes</strong></span><span class="nova-context-sep">•</span><span>${escapeHtml(state.profile.goal || "Your goals")}</span></div>
+          <div class="nova-chat" id="novaMessages"></div>
+          <div class="nova-composer">
+            <textarea id="novaInput" rows="2" placeholder="Ask NOVA anything about your studies…"></textarea>
+            <button class="btn btn-primary nova-send" id="novaSend" onclick="novaSendMessage()" aria-label="Send message">↑</button>
           </div>
-          <button class="icon-btn" onclick="closeModal()">✕</button>
-        </div>
-        <p class="card-sub" style="margin-bottom:10px;">Aaj tumne <strong>${todayMins} study mins</strong> log kiye hain. Kuch bhi poochho—SSC, English, Maths, Reasoning ya study planning.</p>
-        <div id="novaMessages" style="height:min(46vh,390px);min-height:190px;overflow-y:auto;border:1px solid var(--border-color);border-radius:14px;padding:10px;margin-bottom:10px;"></div>
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <textarea id="novaInput" rows="2" placeholder="NOVA se kuch poochho…" style="flex:1;min-width:0;resize:vertical;"></textarea>
-          <button class="btn btn-primary" id="novaSend" onclick="novaSendMessage()">Send</button>
-        </div>
-        <p class="card-sub" style="font-size:.76rem;margin-top:8px;">NOVA ke answers AI-generated hain. Important facts ko verify karna.</p>
+          <p class="nova-disclaimer">AI-generated responses · Verify important exam facts.</p>
+        </section>
       `);
+      document.getElementById("appModalContent")?.classList.add("nova-modal-content");
       renderNovaMessages();
       setTimeout(() => document.getElementById("novaInput")?.focus(), 0);
     }
