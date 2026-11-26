@@ -1424,6 +1424,7 @@
         });
       }
     } catch (e) { console.warn("Supabase init skipped:", e); }
+    window.nexoraSupabase = sb;
 
     const todayStr = () => new Date().toISOString().slice(0, 10);
 
